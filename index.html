@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Foco</title>
+<link id="favicon" rel="icon" href="data:,">
+<style id="estilo">
+:root{--fundo:#16181d;--texto:#e7e7ea;--suave:#9aa0aa;--foco:#e5484d;--pausa:#2bb3a3;--face:#f4f1ea;--risco:#3a3d44}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--fundo);color:var(--texto);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;display:flex;align-items:center;justify-content:center}
+#app{display:flex;flex-direction:column;align-items:center;gap:18px;padding:24px;width:100%;max-width:520px}
+#tarefa{width:100%;background:transparent;border:none;border-bottom:1px solid #2c2f36;color:var(--texto);font-size:20px;text-align:center;padding:6px 4px;outline:none}
+#tarefa:focus{border-bottom-color:var(--suave)}
+.timer{--cor:var(--foco);width:min(70vmin,340px);aspect-ratio:1;position:relative;border-radius:50%;background:var(--face);box-shadow:0 0 0 10px #22252b,0 10px 30px rgba(0,0,0,.45);cursor:pointer;user-select:none;flex:none}
+.timer.pausa{--cor:var(--pausa)}
+.wedge{position:absolute;inset:9%;border-radius:50%}
+.timer.final .wedge{animation:pulso 1.6s ease-in-out infinite}
+.timer.pausado .wedge{opacity:.45}
+.ticks{position:absolute;inset:0;width:100%;height:100%}
+.ticks line{stroke:var(--risco);stroke-linecap:round}
+.hub{position:absolute;left:50%;top:50%;width:9%;height:9%;transform:translate(-50%,-50%);border-radius:50%;background:#2a2d33;box-shadow:0 0 0 3px var(--face)}
+.timer.alarme{animation:alarme .5s ease-in-out 6 alternate}
+@keyframes pulso{0%,100%{opacity:1}50%{opacity:.55}}
+@keyframes alarme{from{box-shadow:0 0 0 10px #22252b,0 0 0 0 transparent}to{box-shadow:0 0 0 10px var(--cor),0 0 60px 20px var(--cor)}}
+#status{color:var(--suave);font-size:15px;min-height:1.3em;text-align:center}
+.linha{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+button,.num{background:#23262d;color:var(--texto);border:1px solid #30343c;border-radius:10px;padding:9px 14px;font-size:14px;cursor:pointer;font-family:inherit}
+button:hover{border-color:#4a4f59}
+button.ativo{border-color:var(--foco);color:#fff}
+button.principal{background:var(--foco);border-color:var(--foco);color:#fff;font-weight:600;min-width:120px}
+button:disabled{opacity:.4;cursor:default}
+.num{width:78px;text-align:center}
+#fim{width:100%;display:flex;flex-direction:column;gap:8px}
+#fim[hidden],#volta[hidden]{display:none}
+#fim label{font-size:15px}
+#gancho{width:100%;min-height:70px;background:#1d2026;color:var(--texto);border:1px solid #30343c;border-radius:10px;padding:10px;font:inherit;font-size:14px;resize:vertical}
+#volta{width:100%;background:#1d2026;border-left:3px solid var(--pausa);padding:10px 12px;border-radius:6px;font-size:14px;white-space:pre-wrap}
+.discreto{font-size:12px;color:#6f7580;text-align:center;max-width:420px}
+body.pip #app{padding:10px;gap:8px}
+body.pip .timer{width:84vmin;box-shadow:0 0 0 6px #22252b}
+body.pip .timer.alarme{animation:alarme .5s ease-in-out 6 alternate}
+#pipTarefa{font-size:13px;color:var(--suave);text-align:center;max-width:95vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:1.2em}
+</style>
+</head>
+<body>
+<div id="app">
+  <input id="tarefa" placeholder="No que você vai focar?" maxlength="80" autocomplete="off">
+  <div id="timer" class="timer" title="Clique para iniciar ou pausar">
+    <div id="wedge" class="wedge"></div>
+    <svg id="ticks" class="ticks" viewBox="0 0 100 100" aria-hidden="true"></svg>
+    <div class="hub"></div>
+  </div>
+  <div id="status"></div>
+  <div class="linha" id="presets">
+    <button data-min="15">15</button>
+    <button data-min="25">25</button>
+    <button data-min="45">45</button>
+    <button data-min="50">50</button>
+    <button data-min="90">90</button>
+    <input class="num" id="minCustom" type="number" min="1" max="180" placeholder="min">
+  </div>
+  <div class="linha">
+    <button id="btnIniciar" class="principal">Iniciar</button>
+    <button id="btnZerar">Zerar</button>
+    <button id="btnPip">Janela flutuante</button>
+    <button id="btnSom">Som: ligado</button>
+  </div>
+  <div id="fim" hidden>
+    <label for="gancho">O que ficou pronto? Onde você parou e qual o próximo passo?</label>
+    <textarea id="gancho" placeholder="Parei em... Próximo passo..."></textarea>
+    <div class="linha">
+      <button id="btnCopiar">Copiar</button>
+      <button id="btnPausa5">Pausa de 5 min</button>
+      <button id="btnPausa10">Pausa de 10 min</button>
+    </div>
+  </div>
+  <div id="volta" hidden></div>
+  <div class="discreto">Espaço inicia ou pausa. O disco mostra o tempo que falta numa escala de 60 min, como o Time Timer (acima de 60 min, a escala vira 120). Passe o mouse no disco se precisar do número.</div>
+</div>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const timer = $('timer'), wedge = $('wedge');
+
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem('foco.' + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
+    set(k, v) { try { localStorage.setItem('foco.' + k, JSON.stringify(v)); } catch (e) {} }
+  };
+
+  // Parâmetros no ?query ou no #hash (o hash não sai do navegador, bom para cópia hospedada)
+  const params = new URLSearchParams(location.search);
+  new URLSearchParams(location.hash.slice(1)).forEach((v, k) => params.set(k, v));
+  const st = {
+    duracaoMin: Number(params.get('min')) || store.get('min', 25),
+    sessaoMin: 25,
+    modo: 'foco',        // foco | pausa
+    estado: 'parado',    // parado | rodando | pausado | fim
+    fim: 0, restanteMs: 0, totalMs: 0,
+    fimEm: 0, lembretes: 0,
+    som: store.get('som', true)
+  };
+  if (!(st.duracaoMin > 0 && st.duracaoMin <= 180)) st.duracaoMin = 25;
+  if (params.get('tarefa')) $('tarefa').value = params.get('tarefa');
+
+  // Marcações do mostrador: 60 riscos, maiores a cada 5 min, sem números
+  (function () {
+    const svg = $('ticks'), ns = 'http://www.w3.org/2000/svg';
+    for (let i = 0; i < 60; i++) {
+      const maior = i % 5 === 0, a = i * 6 * Math.PI / 180;
+      const r1 = 49, r2 = maior ? 44.5 : 47;
+      const l = document.createElementNS(ns, 'line');
+      l.setAttribute('x1', 50 + r1 * Math.sin(a)); l.setAttribute('y1', 50 - r1 * Math.cos(a));
+      l.setAttribute('x2', 50 + r2 * Math.sin(a)); l.setAttribute('y2', 50 - r2 * Math.cos(a));
+      l.setAttribute('stroke-width', maior ? 1.1 : 0.5);
+      svg.appendChild(l);
+    }
+  })();
+
+  // ---------- Som (curto, só no fim) ----------
+  let audio = null;
+  function garantirAudio() {
+    if (!st.som) return;
+    try {
+      audio = audio || new (window.AudioContext || window.webkitAudioContext)();
+      if (audio.state === 'suspended') audio.resume();
+    } catch (e) {}
+  }
+  function tocar(n) {
+    if (!st.som) return;
+    garantirAudio();
+    if (!audio) return;
+    const t0 = audio.currentTime;
+    for (let i = 0; i < n; i++) {
+      const o = audio.createOscillator(), g = audio.createGain(), t = t0 + i * 0.35;
+      o.type = 'sine'; o.frequency.value = 660 + i * 110;
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.25, t + 0.03);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.3);
+      o.connect(g).connect(audio.destination);
+      o.start(t); o.stop(t + 0.32);
+    }
+  }
+
+  // ---------- Notificação do sistema (aparece mesmo com o Chrome atrás) ----------
+  function pedirNotificacao() {
+    try { if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission(); } catch (e) {}
+  }
+  function notificar(titulo, corpo) {
+    try {
+      if (!('Notification' in window) || Notification.permission !== 'granted') return;
+      const n = new Notification(titulo, { body: corpo, tag: 'foco', renotify: true, requireInteraction: true, icon: cv.toDataURL('image/png') });
+      n.onclick = () => { window.focus(); if (!pipWin) $('gancho').focus(); n.close(); };
+    } catch (e) {}
+  }
+
+  // ---------- Favicon: mini disco que também encolhe ----------
+  const cv = document.createElement('canvas'); cv.width = cv.height = 64;
+  const cx = cv.getContext('2d');
+  let chaveFav = '';
+  function favicon(deg) {
+    const chave = Math.round(deg) + st.modo;
+    if (chave === chaveFav) return;
+    chaveFav = chave;
+    cx.clearRect(0, 0, 64, 64);
+    cx.beginPath(); cx.arc(32, 32, 30, 0, Math.PI * 2); cx.fillStyle = '#f4f1ea'; cx.fill();
+    if (deg > 0.5) {
+      cx.beginPath(); cx.moveTo(32, 32);
+      cx.arc(32, 32, 27, -Math.PI / 2, -Math.PI / 2 - deg * Math.PI / 180, true);
+      cx.closePath(); cx.fillStyle = st.modo === 'pausa' ? '#2bb3a3' : '#e5484d'; cx.fill();
+    }
+    $('favicon').href = cv.toDataURL('image/png');
+  }
+
+  // ---------- Estado e desenho ----------
+  function restante() {
+    if (st.estado === 'rodando') return Math.max(0, st.fim - Date.now());
+    if (st.estado === 'pausado') return st.restanteMs;
+    if (st.estado === 'fim') return 0;
+    return st.duracaoMin * 60000;
+  }
+  function escalaMin() {
+    const m = st.estado === 'parado' ? st.duracaoMin : st.sessaoMin;
+    return m > 60 ? 120 : 60;
+  }
+  function render() {
+    const ms = restante();
+    const deg = Math.min(360, ms / (escalaMin() * 60000) * 360);
+    const ini = 360 - deg;
+    wedge.style.background = 'conic-gradient(transparent 0deg ' + ini + 'deg, var(--cor) ' + ini + 'deg 360deg)';
+    const limiteFinal = Math.max(60000, st.totalMs * 0.1);
+    timer.classList.toggle('final', st.estado === 'rodando' && ms <= limiteFinal);
+    timer.classList.toggle('pausado', st.estado === 'pausado');
+    timer.title = (st.estado === 'rodando' || st.estado === 'pausado')
+      ? 'Faltam cerca de ' + Math.ceil(ms / 60000) + ' min'
+      : 'Clique para iniciar ou pausar';
+    favicon(deg);
+  }
+
+  let pipWin = null, pipLabel = null;
+  function nomeTarefa() { return $('tarefa').value.trim(); }
+
+  function atualizarUI() {
+    const b = $('btnIniciar');
+    b.textContent = { parado: 'Iniciar', rodando: 'Pausar', pausado: 'Continuar', fim: 'Novo foco' }[st.estado];
+    const ativo = st.estado === 'rodando' || st.estado === 'pausado';
+    document.querySelectorAll('#presets button').forEach(p => {
+      p.disabled = ativo;
+      p.classList.toggle('ativo', Number(p.dataset.min) === st.duracaoMin);
+    });
+    $('minCustom').disabled = ativo;
+    $('btnSom').textContent = 'Som: ' + (st.som ? 'ligado' : 'desligado');
+    $('btnPip').textContent = pipWin ? 'Fechar janela flutuante' : 'Janela flutuante';
+
+    const t = nomeTarefa();
+    if (st.estado === 'rodando') {
+      $('status').textContent = st.modo === 'foco'
+        ? (t ? 'Focando: ' + t : 'Focando')
+        : 'Pausa: levante da mesa, tome água, caminhe pela casa.';
+    } else if (st.estado === 'pausado') {
+      $('status').textContent = 'Pausado. Espaço ou clique no disco para continuar.';
+    } else if (st.estado === 'parado') {
+      $('status').textContent = 'Escolha a duração e comece.';
+    }
+    const simbolo = { parado: '', rodando: '● ', pausado: '⏸ ', fim: '✓ ' }[st.estado];
+    document.title = simbolo + (st.modo === 'pausa' ? 'Pausa' : (t || 'Foco'));
+    if (pipWin) pipWin.document.title = document.title;
+    if (pipLabel) pipLabel.textContent = st.modo === 'pausa' ? 'Pausa' : (t || 'Foco');
+  }
+
+  function iniciar(min, modo) {
+    st.modo = modo || 'foco';
+    st.sessaoMin = min;
+    st.totalMs = min * 60000;
+    st.fim = Date.now() + st.totalMs;
+    st.estado = 'rodando';
+    st.lembretes = 0;
+    timer.classList.toggle('pausa', st.modo === 'pausa');
+    timer.classList.remove('alarme');
+    $('fim').hidden = true;
+    if (st.modo === 'foco') $('volta').hidden = true;
+    garantirAudio();
+    atualizarUI(); render();
+  }
+
+  function alternar() {
+    if (st.estado === 'rodando') {
+      st.restanteMs = Math.max(0, st.fim - Date.now());
+      st.estado = 'pausado';
+    } else if (st.estado === 'pausado') {
+      st.fim = Date.now() + st.restanteMs;
+      st.estado = 'rodando';
+    } else {
+      iniciar(st.duracaoMin, 'foco');
+      return;
+    }
+    atualizarUI(); render();
+  }
+
+  function zerar() {
+    st.estado = 'parado'; st.modo = 'foco'; st.totalMs = 0;
+    timer.classList.remove('pausa', 'alarme', 'final', 'pausado');
+    $('fim').hidden = true; $('volta').hidden = true;
+    atualizarUI(); render();
+  }
+
+  function piscar() {
+    timer.classList.remove('alarme');
+    void timer.offsetWidth; // reinicia a animação
+    timer.classList.add('alarme');
+    setTimeout(() => timer.classList.remove('alarme'), 3200);
+  }
+
+  function terminar() {
+    st.estado = 'fim';
+    st.fimEm = Date.now();
+    timer.classList.remove('final', 'pausado');
+    piscar();
+    tocar(st.modo === 'foco' ? 3 : 2);
+    if (st.modo === 'foco') {
+      $('status').textContent = 'Tempo! Antes de sair, anote onde parou.';
+      $('fim').hidden = false;
+      if (!pipWin) $('gancho').focus();
+      notificar('Fim do foco' + (nomeTarefa() ? ': ' + nomeTarefa() : ''), 'O que ficou pronto? Onde você parou?');
+    } else {
+      $('status').textContent = 'A pausa acabou. Hora de voltar.';
+      const g = $('gancho').value.trim();
+      if (g) { $('volta').textContent = 'Você tinha anotado:\n' + g; $('volta').hidden = false; }
+      notificar('A pausa acabou', g ? 'Você tinha anotado: ' + g.slice(0, 120) : 'Hora de voltar.');
+    }
+    atualizarUI(); render();
+  }
+
+  // Segundo e terceiro toque, com frase diferente, se o gancho ficar vazio
+  function lembrarSeParado() {
+    if (st.estado !== 'fim' || st.modo !== 'foco' || $('gancho').value.trim()) return;
+    const passou = Date.now() - st.fimEm;
+    const marcos = [2 * 60000, 5 * 60000];
+    if (st.lembretes < marcos.length && passou >= marcos[st.lembretes]) {
+      st.lembretes++;
+      $('status').textContent = st.lembretes === 1
+        ? 'Ainda aí? Uma linha só: onde você parou?'
+        : 'Anota o próximo passo e levanta da mesa. A tarefa espera.';
+      piscar(); tocar(1);
+      notificar(st.lembretes === 1 ? 'Ainda aí?' : 'Levanta da mesa', $('status').textContent);
+    }
+  }
+
+  function tick() {
+    if (st.estado === 'rodando' && st.fim - Date.now() <= 0) { terminar(); return; }
+    lembrarSeParado();
+    render();
+  }
+
+  // Relógio num Worker: não sofre o congelamento de abas em segundo plano
+  function iniciarRelogio() {
+    let fallback = false;
+    const usarIntervalo = () => { if (!fallback) { fallback = true; setInterval(tick, 500); } };
+    try {
+      const url = URL.createObjectURL(new Blob(['setInterval(function(){postMessage(0)},500)'], { type: 'text/javascript' }));
+      const w = new Worker(url);
+      w.onmessage = tick;
+      w.onerror = usarIntervalo;
+    } catch (e) { usarIntervalo(); }
+  }
+
+  // ---------- Janela flutuante (Document Picture-in-Picture) ----------
+  async function alternarPip() {
+    if (pipWin) { pipWin.close(); return; }
+    if (!('documentPictureInPicture' in window)) {
+      $('status').textContent = 'Janela flutuante indisponível aqui. Abra este arquivo direto no Chrome (versão 116 ou mais nova).';
+      return;
+    }
+    try {
+      pipWin = await documentPictureInPicture.requestWindow({ width: 240, height: 290 });
+    } catch (e) {
+      pipWin = null;
+      $('status').textContent = 'Não consegui abrir a janela flutuante: ' + e.message;
+      return;
+    }
+    const d = pipWin.document;
+    d.head.appendChild($('estilo').cloneNode(true));
+    d.body.className = 'pip';
+    const wrap = d.createElement('div'); wrap.id = 'app';
+    pipLabel = d.createElement('div'); pipLabel.id = 'pipTarefa';
+    const marca = document.createComment('timer');
+    timer.before(marca);
+    wrap.append(pipLabel, timer);
+    d.body.appendChild(wrap);
+    pipWin.addEventListener('keydown', teclas);
+    pipWin.addEventListener('pagehide', () => {
+      marca.replaceWith(timer);
+      pipWin = null; pipLabel = null;
+      atualizarUI();
+    });
+    atualizarUI(); render();
+  }
+
+  // ---------- Eventos ----------
+  function teclas(e) {
+    const alvo = e.target && e.target.tagName;
+    if (e.code === 'Space' && alvo !== 'INPUT' && alvo !== 'TEXTAREA') {
+      e.preventDefault(); alternar();
+    }
+  }
+  document.addEventListener('keydown', teclas);
+  timer.addEventListener('click', alternar);
+  $('btnIniciar').addEventListener('click', alternar);
+  $('btnZerar').addEventListener('click', zerar);
+  $('btnPip').addEventListener('click', alternarPip);
+  $('btnSom').addEventListener('click', () => { st.som = !st.som; store.set('som', st.som); if (st.som) garantirAudio(); atualizarUI(); });
+  $('btnPausa5').addEventListener('click', () => iniciar(5, 'pausa'));
+  $('btnPausa10').addEventListener('click', () => iniciar(10, 'pausa'));
+  $('tarefa').addEventListener('input', atualizarUI);
+
+  document.querySelectorAll('#presets button').forEach(p => p.addEventListener('click', () => {
+    st.duracaoMin = Number(p.dataset.min); store.set('min', st.duracaoMin);
+    $('minCustom').value = '';
+    if (st.estado === 'fim') zerar();
+    atualizarUI(); render();
+  }));
+  $('minCustom').addEventListener('change', e => {
+    const v = Math.round(Number(e.target.value));
+    if (v >= 1 && v <= 180) {
+      st.duracaoMin = v; store.set('min', v);
+      if (st.estado === 'fim') zerar();
+      atualizarUI(); render();
+    }
+  });
+
+  $('btnCopiar').addEventListener('click', async () => {
+    const texto = (nomeTarefa() ? nomeTarefa() + '\n' : '') + 'Parei em / próximo passo: ' + $('gancho').value.trim();
+    try { await navigator.clipboard.writeText(texto); }
+    catch (e) { const ta = $('gancho'); ta.select(); document.execCommand('copy'); }
+    $('status').textContent = 'Copiado. Agora a pausa.';
+  });
+
+  window.addEventListener('beforeunload', e => {
+    if (st.estado === 'rodando' || st.estado === 'pausado') { e.preventDefault(); e.returnValue = ''; }
+  });
+  document.addEventListener('visibilitychange', render);
+
+  // Com ?auto=1 o foco começa sem clique, e o navegador segura o som até a primeira interação
+  const destravarAudio = () => {
+    garantirAudio(); pedirNotificacao();
+    document.removeEventListener('pointerdown', destravarAudio);
+    document.removeEventListener('keydown', destravarAudio);
+  };
+  document.addEventListener('pointerdown', destravarAudio);
+  document.addEventListener('keydown', destravarAudio);
+
+  atualizarUI(); render(); iniciarRelogio();
+  if (params.get('auto') === '1') iniciar(st.duracaoMin, 'foco');
+})();
+</script>
+</body>
+</html>
