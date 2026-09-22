@@ -6,14 +6,34 @@
 <title>Foco</title>
 <link id="favicon" rel="icon" href="data:,">
 <style id="estilo">
-:root{--fundo:#16181d;--texto:#e7e7ea;--suave:#9aa0aa;--foco:#e5484d;--pausa:#2bb3a3;--face:#f4f1ea;--risco:#3a3d44}
+:root{--fundo:#16181d;--texto:#e7e7ea;--suave:#9aa0aa;--apagado:#6f7580;--foco:#e5484d;--pausa:#2bb3a3;--face:#f4f1ea;--risco:#3a3d44;--cartao:#1d2026;--borda:#30343c}
 *{box-sizing:border-box}
-html,body{margin:0;height:100%}
-body{background:var(--fundo);color:var(--texto);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;display:flex;align-items:center;justify-content:center}
-#app{display:flex;flex-direction:column;align-items:center;gap:18px;padding:24px;width:100%;max-width:520px}
-#tarefa{width:100%;background:transparent;border:none;border-bottom:1px solid #2c2f36;color:var(--texto);font-size:20px;text-align:center;padding:6px 4px;outline:none}
-#tarefa:focus{border-bottom-color:var(--suave)}
-.timer{--cor:var(--foco);width:min(70vmin,340px);aspect-ratio:1;position:relative;border-radius:50%;background:var(--face);box-shadow:0 0 0 10px #22252b,0 10px 30px rgba(0,0,0,.45);cursor:pointer;user-select:none;flex:none}
+html,body{margin:0;min-height:100%}
+body{background:var(--fundo);color:var(--texto);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;display:flex;justify-content:center}
+[hidden]{display:none!important}
+#app{display:flex;flex-direction:column;align-items:center;gap:16px;padding:24px 16px 32px;width:100%;max-width:500px}
+#contador{font-size:13px;color:var(--apagado);min-height:1.2em}
+
+/* Dica da primeira visita */
+#dica{width:100%;background:var(--cartao);border:1px solid var(--borda);border-radius:12px;padding:14px 16px;font-size:14px;line-height:1.5}
+#dica ol{margin:6px 0 10px;padding-left:20px}
+#dica button{font-size:13px;padding:6px 12px}
+
+/* Preparação */
+#config{width:100%;display:flex;flex-direction:column;gap:12px;align-items:center}
+.campo{width:100%;display:flex;flex-direction:column;gap:4px}
+.campo label{font-size:13px;color:var(--suave)}
+.campo input{width:100%;background:var(--cartao);border:1px solid var(--borda);border-radius:10px;color:var(--texto);font:inherit;font-size:18px;padding:10px 12px;outline:none}
+.campo input:focus{border-color:var(--suave)}
+#pronto{font-size:15px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+
+/* Palco: vai para a janela flutuante */
+#palco{display:flex;flex-direction:column;align-items:center;gap:10px;width:100%}
+#titulo{font-size:22px;font-weight:600;text-align:center;line-height:1.25;max-width:100%;overflow-wrap:anywhere}
+#prontoLinha{font-size:14px;color:var(--suave);text-align:center;max-width:100%}
+#prontoLinha b{color:var(--texto);font-weight:500}
+.timer{--cor:var(--foco);width:min(68vmin,320px);aspect-ratio:1;position:relative;border-radius:50%;background:var(--face);box-shadow:0 0 0 10px #22252b,0 10px 30px rgba(0,0,0,.45);cursor:pointer;user-select:none;flex:none}
 .timer.pausa{--cor:var(--pausa)}
 .wedge{position:absolute;inset:9%;border-radius:50%}
 .timer.final .wedge{animation:pulso 1.6s ease-in-out infinite}
@@ -24,60 +44,129 @@ body{background:var(--fundo);color:var(--texto);font-family:system-ui,-apple-sys
 .timer.alarme{animation:alarme .5s ease-in-out 6 alternate}
 @keyframes pulso{0%,100%{opacity:1}50%{opacity:.55}}
 @keyframes alarme{from{box-shadow:0 0 0 10px #22252b,0 0 0 0 transparent}to{box-shadow:0 0 0 10px var(--cor),0 0 60px 20px var(--cor)}}
-#status{color:var(--suave);font-size:15px;min-height:1.3em;text-align:center}
+#info{font-size:15px;color:var(--suave);min-height:1.3em;text-align:center}
+#info.atraso{color:var(--foco);font-weight:600}
+#status{font-size:16px;min-height:1.3em;text-align:center;max-width:100%}
+#pipBotoes{display:none}
+body.pip #pipBotoes{display:flex;gap:6px}
+
+/* Botões */
+button{background:#23262d;color:var(--texto);border:1px solid var(--borda);border-radius:10px;padding:9px 14px;font-size:14px;cursor:pointer;font-family:inherit}
+button:hover:not(:disabled){border-color:#4a4f59}
+button:disabled{opacity:.35;cursor:default}
+button:focus-visible,input:focus-visible,textarea:focus-visible,summary:focus-visible{outline:2px solid var(--suave);outline-offset:2px}
+.chip.ativo{border-color:var(--foco);color:#fff;background:#2c1f22}
+.chip.num{width:74px;text-align:center;background:#23262d;border:1px solid var(--borda);border-radius:10px;color:var(--texto);font:inherit;font-size:14px;padding:9px 6px}
+.principal{background:var(--foco);border-color:var(--foco);color:#fff;font-weight:600;font-size:17px;padding:13px 22px;min-width:220px}
+.principal.verde{background:var(--pausa);border-color:var(--pausa)}
 .linha{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
-button,.num{background:#23262d;color:var(--texto);border:1px solid #30343c;border-radius:10px;padding:9px 14px;font-size:14px;cursor:pointer;font-family:inherit}
-button:hover{border-color:#4a4f59}
-button.ativo{border-color:var(--foco);color:#fff}
-button.principal{background:var(--foco);border-color:var(--foco);color:#fff;font-weight:600;min-width:120px}
-button:disabled{opacity:.4;cursor:default}
-.num{width:78px;text-align:center}
-#fim{width:100%;display:flex;flex-direction:column;gap:8px}
-#fim[hidden],#volta[hidden]{display:none}
-#fim label{font-size:15px}
-#gancho{width:100%;min-height:70px;background:#1d2026;color:var(--texto);border:1px solid #30343c;border-radius:10px;padding:10px;font:inherit;font-size:14px;resize:vertical}
-#volta{width:100%;background:#1d2026;border-left:3px solid var(--pausa);padding:10px 12px;border-radius:6px;font-size:14px;white-space:pre-wrap}
-.discreto{font-size:12px;color:#6f7580;text-align:center;max-width:420px}
-body.pip #app{padding:10px;gap:8px}
-body.pip .timer{width:84vmin;box-shadow:0 0 0 6px #22252b}
-body.pip .timer.alarme{animation:alarme .5s ease-in-out 6 alternate}
-#pipTarefa{font-size:13px;color:var(--suave);text-align:center;max-width:95vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:1.2em}
+.link{background:none;border:none;color:var(--apagado);text-decoration:underline;padding:4px;font-size:13px}
+
+/* Fim do foco */
+#fim{width:100%;display:flex;flex-direction:column;gap:10px}
+#fim .pergunta{font-size:17px;font-weight:600;text-align:center}
+#gancho{width:100%;min-height:78px;background:var(--cartao);color:var(--texto);border:1px solid var(--borda);border-radius:10px;padding:10px;font:inherit;font-size:15px;resize:vertical}
+#fim .obs{font-size:13px;color:var(--apagado);text-align:center}
+#volta{width:100%;background:var(--cartao);border-left:3px solid var(--pausa);padding:10px 12px;border-radius:6px;font-size:14px;white-space:pre-wrap;line-height:1.45}
+
+/* Antes de começar: botão logo abaixo da duração, disco menor */
+body.parado #palco,body.parado #volta,body.parado #ajustes{order:1}
+body.parado .timer,body.fimfoco .timer{width:min(46vmin,200px)}
+#palco .timer{margin:8px 0 6px}
+
+#ajustes{width:100%;font-size:13px;color:var(--apagado)}
+#ajustes summary{cursor:pointer;text-align:center;list-style:none}
+#ajustes summary::-webkit-details-marker{display:none}
+#ajustes .linha{margin-top:10px}
+#ajustes p{text-align:center;margin:10px 0 0;line-height:1.5}
+
+/* Janela flutuante: só o essencial */
+body.pip{align-items:center;min-height:100vh}
+body.pip #palco{padding:8px;gap:6px}
+body.pip #titulo{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:95vw}
+body.pip #prontoLinha{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:95vw}
+body.pip .timer{width:min(62vmin,62vh);box-shadow:0 0 0 6px #22252b}
+body.pip #info{font-size:12px;min-height:0}
+body.pip #pipBotoes button{font-size:12px;padding:6px 10px}
+body.pip #pipAcao{background:var(--foco);border-color:var(--foco);color:#fff;font-weight:600}
 </style>
 </head>
 <body>
 <div id="app">
-  <input id="tarefa" placeholder="No que você vai focar?" maxlength="80" autocomplete="off">
-  <div id="timer" class="timer" title="Clique para iniciar ou pausar">
-    <div id="wedge" class="wedge"></div>
-    <svg id="ticks" class="ticks" viewBox="0 0 100 100" aria-hidden="true"></svg>
-    <div class="hub"></div>
+  <div id="contador"></div>
+
+  <div id="dica" hidden>
+    <b>Como funciona</b>
+    <ol>
+      <li>Escreva no que vai focar e quando vai estar pronto.</li>
+      <li>Escolha o tempo e comece. O disco vermelho encolhe até acabar.</li>
+      <li>Quando tocar, anote onde parou antes de levantar. Você retoma daí.</li>
+    </ol>
+    <button id="btnDica">Entendi</button>
   </div>
-  <div id="status"></div>
-  <div class="linha" id="presets">
-    <button data-min="15">15</button>
-    <button data-min="25">25</button>
-    <button data-min="45">45</button>
-    <button data-min="50">50</button>
-    <button data-min="90">90</button>
-    <input class="num" id="minCustom" type="number" min="1" max="180" placeholder="min">
-  </div>
-  <div class="linha">
-    <button id="btnIniciar" class="principal">Iniciar</button>
-    <button id="btnZerar">Zerar</button>
-    <button id="btnPip">Janela flutuante</button>
-    <button id="btnSom">Som: ligado</button>
-  </div>
-  <div id="fim" hidden>
-    <label for="gancho">O que ficou pronto? Onde você parou e qual o próximo passo?</label>
-    <textarea id="gancho" placeholder="Parei em... Próximo passo..."></textarea>
-    <div class="linha">
-      <button id="btnCopiar">Copiar</button>
-      <button id="btnPausa5">Pausa de 5 min</button>
-      <button id="btnPausa10">Pausa de 10 min</button>
+
+  <div id="config">
+    <div class="campo">
+      <label for="tarefa">No que você vai focar?</label>
+      <input id="tarefa" maxlength="80" autocomplete="off" placeholder="Ex.: revisar o PR da tela de login">
+    </div>
+    <div class="campo">
+      <label for="pronto">Pronto quando... (opcional, evita fazer além do combinado)</label>
+      <input id="pronto" maxlength="120" autocomplete="off" placeholder="Ex.: PR aprovado ou comentado">
+    </div>
+    <div class="chips" id="presets" role="group" aria-label="Duração em minutos">
+      <button class="chip" data-min="15">15 min</button>
+      <button class="chip" data-min="25">25 min</button>
+      <button class="chip" data-min="45">45 min</button>
+      <button class="chip" data-min="60">60 min</button>
+      <input class="chip num" id="minCustom" type="number" min="1" max="180" placeholder="outro" aria-label="Outra duração em minutos">
     </div>
   </div>
+
+  <div id="palco">
+    <div id="titulo" hidden></div>
+    <div id="prontoLinha" hidden></div>
+    <div id="timer" class="timer" role="img" aria-label="Tempo restante">
+      <div id="wedge" class="wedge"></div>
+      <svg id="ticks" class="ticks" viewBox="0 0 100 100" aria-hidden="true"></svg>
+      <div class="hub"></div>
+    </div>
+    <div id="info" aria-live="polite"></div>
+    <div class="linha" id="pipBotoes">
+      <button id="pipAcao" hidden></button>
+      <button id="pipVoltar" title="Fecha a janela flutuante e volta para a aba do timer">Voltar à aba</button>
+    </div>
+  </div>
+
+  <div id="status" aria-live="polite"></div>
+
   <div id="volta" hidden></div>
-  <div class="discreto">Espaço inicia ou pausa. O disco mostra o tempo que falta numa escala de 60 min, como o Time Timer (acima de 60 min, a escala vira 120). Passe o mouse no disco se precisar do número.</div>
+
+  <div id="fim" hidden>
+    <div class="pergunta">Antes de levantar: onde você parou e qual o próximo passo?</div>
+    <textarea id="gancho" placeholder="Parei em... Quando voltar, vou..."></textarea>
+    <div class="linha">
+      <button id="btnPausa5" class="principal verde" disabled>Pausa de 5 min</button>
+      <button id="btnPausa10" disabled>Pausa de 10 min</button>
+      <button id="btnEncerrar" disabled>Encerrar por hoje</button>
+    </div>
+    <div class="obs" id="obsGancho">Uma linha já basta. A pausa libera quando você anotar. <button class="link" id="btnPular">pular desta vez</button></div>
+  </div>
+
+  <div class="linha" id="acoes">
+    <button id="btnPrincipal" class="principal">Começar</button>
+    <button id="btnPip">Janela flutuante</button>
+  </div>
+
+  <details id="ajustes">
+    <summary>Ajustes</summary>
+    <div class="linha">
+      <button id="btnSom">Som: forte</button>
+      <button id="btnZerar">Recomeçar do zero</button>
+      <button id="btnVerDica">Como funciona</button>
+    </div>
+    <p>Espaço pausa ou continua. O disco usa uma escala de 60 min, como o Time Timer (acima de 60 min, vira 120). A janela flutuante deixa o disco por cima das outras janelas.</p>
+  </details>
 </div>
 
 <script>
@@ -93,6 +182,7 @@ body.pip .timer.alarme{animation:alarme .5s ease-in-out 6 alternate}
   // Parâmetros no ?query ou no #hash (o hash não sai do navegador, bom para cópia hospedada)
   const params = new URLSearchParams(location.search);
   new URLSearchParams(location.hash.slice(1)).forEach((v, k) => params.set(k, v));
+
   const st = {
     duracaoMin: Number(params.get('min')) || store.get('min', 25),
     sessaoMin: 25,
@@ -100,10 +190,23 @@ body.pip .timer.alarme{animation:alarme .5s ease-in-out 6 alternate}
     estado: 'parado',    // parado | rodando | pausado | fim
     fim: 0, restanteMs: 0, totalMs: 0,
     fimEm: 0, lembretes: 0,
+    pular: false,
+    retomada: '',        // gancho mostrado ao voltar para a mesma tarefa
     som: store.get('somNivel', store.get('som', true) === false ? 'desligado' : 'forte') // forte | suave | desligado
   };
   if (!(st.duracaoMin > 0 && st.duracaoMin <= 180)) st.duracaoMin = 25;
   if (params.get('tarefa')) $('tarefa').value = params.get('tarefa');
+  if (params.get('pronto')) $('pronto').value = params.get('pronto');
+
+  // Pausa com conteúdo: uma sugestão por vez, girando
+  const ATIVIDADES = [
+    'Levante e tome um copo de água.',
+    'Caminhe pela casa, longe da tela.',
+    'Coma alguma coisa.',
+    'Converse com alguém da casa.',
+    'Leia um pouco, longe do computador.',
+    'Saia da frente do computador e olhe pela janela.'
+  ];
 
   // Marcações do mostrador: 60 riscos, maiores a cada 5 min, sem números
   (function () {
@@ -119,6 +222,22 @@ body.pip .timer.alarme{animation:alarme .5s ease-in-out 6 alternate}
     }
   })();
 
+  // ---------- Contador leve de focos do dia ----------
+  function hoje() { const d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
+  function focosHoje() { const c = store.get('contagem', null); return c && c.dia === hoje() ? c.n : 0; }
+  function contarFoco() { store.set('contagem', { dia: hoje(), n: focosHoje() + 1 }); }
+
+  // ---------- Gancho salvo (sobrevive a fechar a aba) ----------
+  function salvarGancho() {
+    const texto = $('gancho').value.trim();
+    if (texto) store.set('gancho', { tarefa: nomeTarefa(), texto, em: Date.now() });
+  }
+  function ganchoDaTarefa() {
+    const g = store.get('gancho', null);
+    if (!g || !g.texto || Date.now() - g.em > 3 * 86400000) return '';
+    return g.tarefa === nomeTarefa() ? g.texto : '';
+  }
+
   // ---------- Som: alarme que repete até ele mexer no timer ----------
   let audio = null;
   function garantirAudio() {
@@ -128,7 +247,7 @@ body.pip .timer.alarme{animation:alarme .5s ease-in-out 6 alternate}
       if (audio.state === 'suspended') audio.resume();
     } catch (e) {}
   }
-  // Padrões diferentes para fim do foco, fim da pausa e cada lembrete: som idêntico é o que ele aprende a ignorar
+  // Padrões diferentes para fim do foco, fim da pausa e cada lembrete: som idêntico é o que se aprende a ignorar
   const PADROES = [
     [[880, .18], [660, .18], [880, .18], [660, .18], [880, .4]],   // fim do foco: sirene curta
     [[523, .22], [659, .22], [784, .22], [1047, .5]],              // fim da pausa: subida
@@ -169,18 +288,6 @@ body.pip .timer.alarme{animation:alarme .5s ease-in-out 6 alternate}
     if (agora >= alarme.proximo) { tocarPadrao(alarme.padrao); alarme.proximo = agora + 4000; }
   }
 
-  // ---------- Notificação do sistema (aparece mesmo com o Chrome atrás) ----------
-  function pedirNotificacao() {
-    try { if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission(); } catch (e) {}
-  }
-  function notificar(titulo, corpo) {
-    try {
-      if (!('Notification' in window) || Notification.permission !== 'granted') return;
-      const n = new Notification(titulo, { body: corpo, tag: 'foco', renotify: true, requireInteraction: true, icon: cv.toDataURL('image/png') });
-      n.onclick = () => { window.focus(); if (!pipWin) $('gancho').focus(); n.close(); };
-    } catch (e) {}
-  }
-
   // ---------- Favicon: mini disco que também encolhe ----------
   const cv = document.createElement('canvas'); cv.width = cv.height = 64;
   const cx = cv.getContext('2d');
@@ -199,7 +306,20 @@ body.pip .timer.alarme{animation:alarme .5s ease-in-out 6 alternate}
     $('favicon').href = cv.toDataURL('image/png');
   }
 
+  // ---------- Notificação do sistema (aparece mesmo com o Chrome atrás) ----------
+  function pedirNotificacao() {
+    try { if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission(); } catch (e) {}
+  }
+  function notificar(titulo, corpo) {
+    try {
+      if (!('Notification' in window) || Notification.permission !== 'granted') return;
+      const n = new Notification(titulo, { body: corpo, tag: 'foco', renotify: true, requireInteraction: true, icon: cv.toDataURL('image/png') });
+      n.onclick = () => { window.focus(); if (!pipWin) $('gancho').focus(); n.close(); };
+    } catch (e) {}
+  }
+
   // ---------- Estado e desenho ----------
+  const hhmm = ms => { const d = new Date(ms); return d.getHours() + 'h' + String(d.getMinutes()).padStart(2, '0'); };
   function restante() {
     if (st.estado === 'rodando') return Math.max(0, st.fim - Date.now());
     if (st.estado === 'pausado') return st.restanteMs;
@@ -210,6 +330,8 @@ body.pip .timer.alarme{animation:alarme .5s ease-in-out 6 alternate}
     const m = st.estado === 'parado' ? st.duracaoMin : st.sessaoMin;
     return m > 60 ? 120 : 60;
   }
+  function minutosAlem() { return st.estado === 'fim' ? Math.floor((Date.now() - st.fimEm) / 60000) : 0; }
+
   function render() {
     const ms = restante();
     const deg = Math.min(360, ms / (escalaMin() * 60000) * 360);
@@ -218,41 +340,97 @@ body.pip .timer.alarme{animation:alarme .5s ease-in-out 6 alternate}
     const limiteFinal = Math.max(60000, st.totalMs * 0.1);
     timer.classList.toggle('final', st.estado === 'rodando' && ms <= limiteFinal);
     timer.classList.toggle('pausado', st.estado === 'pausado');
-    timer.title = (st.estado === 'rodando' || st.estado === 'pausado')
-      ? 'Faltam cerca de ' + Math.ceil(ms / 60000) + ' min'
-      : 'Clique para iniciar ou pausar';
+    timer.title = (st.estado === 'rodando' || st.estado === 'pausado') ? 'Faltam cerca de ' + Math.ceil(ms / 60000) + ' min' : '';
+
+    // Linha de tempo: hora de término (sem contagem regressiva) e, depois do fim, quanto passou
+    const info = $('info');
+    let txt = '', atraso = false;
+    if (st.estado === 'rodando') txt = (st.modo === 'pausa' ? 'Pausa até ' : 'Termina às ') + hhmm(st.fim);
+    else if (st.estado === 'pausado') txt = 'Pausado';
+    else if (st.estado === 'fim') {
+      const m = minutosAlem();
+      if (m >= 1) { txt = '+' + m + ' min além do combinado'; atraso = true; }
+      else txt = st.modo === 'foco' ? 'Tempo!' : 'Fim da pausa';
+    } else txt = st.duracaoMin + ' min, terminaria às ' + hhmm(Date.now() + st.duracaoMin * 60000);
+    if (info.textContent !== txt) info.textContent = txt;
+    info.classList.toggle('atraso', atraso);
     favicon(deg);
+    tituloAba();
   }
 
-  let pipWin = null, pipLabel = null;
+  let pipWin = null;
   function nomeTarefa() { return $('tarefa').value.trim(); }
+  function nomePronto() { return $('pronto').value.trim(); }
+
+  function tituloAba() {
+    const t = nomeTarefa();
+    let base = st.modo === 'pausa' ? 'Pausa' : (t || 'Foco');
+    let s = { parado: '', rodando: '● ', pausado: '⏸ ', fim: '⏰ ' }[st.estado];
+    if (st.estado === 'fim' && minutosAlem() >= 1) s = '⏰ +' + minutosAlem() + ' min · ';
+    const titulo = s + base;
+    if (document.title !== titulo) document.title = titulo;
+    if (pipWin && pipWin.document.title !== titulo) pipWin.document.title = titulo;
+  }
 
   function atualizarUI() {
-    const b = $('btnIniciar');
-    b.textContent = { parado: 'Iniciar', rodando: 'Pausar', pausado: 'Continuar', fim: 'Novo foco' }[st.estado];
-    const ativo = st.estado === 'rodando' || st.estado === 'pausado';
-    document.querySelectorAll('#presets button').forEach(p => {
-      p.disabled = ativo;
-      p.classList.toggle('ativo', Number(p.dataset.min) === st.duracaoMin);
-    });
-    $('minCustom').disabled = ativo;
+    const parado = st.estado === 'parado';
+    const fimFoco = st.estado === 'fim' && st.modo === 'foco';
+    const fimPausa = st.estado === 'fim' && st.modo === 'pausa';
+
+    // Preparação só aparece antes de começar
+    $('config').hidden = !parado;
+    document.body.classList.toggle('parado', parado);
+    document.body.classList.toggle('fimfoco', fimFoco);
+    document.querySelectorAll('#presets .chip[data-min]').forEach(p => p.classList.toggle('ativo', Number(p.dataset.min) === st.duracaoMin));
+
+    // Tarefa e critério de pronto sempre à vista depois de começar
+    const t = nomeTarefa(), p = nomePronto();
+    $('titulo').hidden = parado || !(t || st.modo === 'pausa');
+    $('titulo').textContent = st.modo === 'pausa' && st.estado !== 'fim' ? 'Pausa' : t;
+    $('prontoLinha').hidden = parado || !p || st.modo === 'pausa';
+    $('prontoLinha').innerHTML = '';
+    if (p) { $('prontoLinha').append('Pronto quando: '); const b = document.createElement('b'); b.textContent = p; $('prontoLinha').append(b); }
+    timer.classList.toggle('pausa', st.modo === 'pausa');
+
+    // Mensagem principal
+    const status = $('status');
+    if (st.estado === 'rodando') status.textContent = st.modo === 'foco' ? (st.retomada ? '' : 'Só isso agora. O resto espera.') : st.atividade;
+    else if (st.estado === 'pausado') status.textContent = 'Pausado. Espaço ou clique no disco para continuar.';
+    else if (fimPausa) status.textContent = 'A pausa acabou. Hora de voltar.';
+    else if (parado) status.textContent = '';
+
+    // Onde parou: aparece ao voltar para a mesma tarefa
+    const g = fimPausa || (st.estado === 'rodando' && st.modo === 'foco') ? st.retomada : (parado ? ganchoDaTarefa() : '');
+    $('volta').hidden = !g;
+    if (g) $('volta').textContent = (parado ? 'Da última vez você parou em:\n' : 'Você parou em:\n') + g;
+
+    // Fim do foco: pausa só libera com o gancho anotado (ou "pular")
+    $('fim').hidden = !fimFoco;
+    const liberado = st.pular || $('gancho').value.trim().length >= 3;
+    ['btnPausa5', 'btnPausa10', 'btnEncerrar'].forEach(id => $(id).disabled = !liberado);
+    $('obsGancho').hidden = liberado;
+
+    // Um botão principal por estado
+    const b = $('btnPrincipal');
+    b.hidden = fimFoco;
+    b.classList.toggle('principal', parado || st.estado === 'pausado' || fimPausa);
+    b.classList.toggle('verde', false);
+    b.textContent = parado ? 'Começar ' + st.duracaoMin + ' min'
+      : st.estado === 'pausado' ? 'Continuar'
+      : fimPausa ? 'Voltar pro foco · ' + st.duracaoMin + ' min'
+      : st.modo === 'pausa' ? 'Encerrar pausa agora' : 'Pausar';
+
     $('btnSom').textContent = 'Som: ' + st.som;
     $('btnPip').textContent = pipWin ? 'Fechar janela flutuante' : 'Janela flutuante';
 
-    const t = nomeTarefa();
-    if (st.estado === 'rodando') {
-      $('status').textContent = st.modo === 'foco'
-        ? (t ? 'Focando: ' + t : 'Focando')
-        : 'Pausa: levante da mesa, tome água, caminhe pela casa.';
-    } else if (st.estado === 'pausado') {
-      $('status').textContent = 'Pausado. Espaço ou clique no disco para continuar.';
-    } else if (st.estado === 'parado') {
-      $('status').textContent = 'Escolha a duração e comece.';
-    }
-    const simbolo = { parado: '', rodando: '● ', pausado: '⏸ ', fim: '✓ ' }[st.estado];
-    document.title = simbolo + (st.modo === 'pausa' ? 'Pausa' : (t || 'Foco'));
-    if (pipWin) pipWin.document.title = document.title;
-    if (pipLabel) pipLabel.textContent = st.modo === 'pausa' ? 'Pausa' : (t || 'Foco');
+    // Botão da janela flutuante: leva de volta para anotar ou retomar
+    const pa = $('pipAcao');
+    pa.hidden = !(fimFoco || fimPausa);
+    pa.textContent = fimFoco ? 'Anotar onde parei' : 'Voltar pro foco';
+
+    const n = focosHoje();
+    $('contador').textContent = n ? n + (n === 1 ? ' foco' : ' focos') + ' hoje' : '';
+    render();
   }
 
   function iniciar(min, modo) {
@@ -262,13 +440,19 @@ body.pip .timer.alarme{animation:alarme .5s ease-in-out 6 alternate}
     st.fim = Date.now() + st.totalMs;
     st.estado = 'rodando';
     st.lembretes = 0;
+    st.pular = false;
     pararAlarme();
-    timer.classList.toggle('pausa', st.modo === 'pausa');
+    if (st.modo === 'pausa') st.atividade = 'Pausa: ' + ATIVIDADES[focosHoje() % ATIVIDADES.length];
     timer.classList.remove('alarme');
-    $('fim').hidden = true;
-    if (st.modo === 'foco') $('volta').hidden = true;
     garantirAudio();
-    atualizarUI(); render();
+    atualizarUI();
+  }
+
+  function comecarFoco() {
+    if (!nomeTarefa()) { $('tarefa').focus(); $('status').textContent = 'Escreva primeiro no que você vai focar.'; return; }
+    st.retomada = ganchoDaTarefa();
+    $('gancho').value = '';
+    iniciar(st.duracaoMin, 'foco');
   }
 
   function alternar() {
@@ -278,18 +462,29 @@ body.pip .timer.alarme{animation:alarme .5s ease-in-out 6 alternate}
     } else if (st.estado === 'pausado') {
       st.fim = Date.now() + st.restanteMs;
       st.estado = 'rodando';
-    } else {
-      iniciar(st.duracaoMin, 'foco');
-      return;
-    }
-    atualizarUI(); render();
+    } else if (st.estado === 'parado') {
+      comecarFoco(); return;
+    } else return; // no fim, clicar no disco só cala o alarme
+    atualizarUI();
+  }
+
+  function principal() {
+    if (st.estado === 'fim' && st.modo === 'pausa') { voltarAoFoco(); return; }
+    if (st.estado === 'rodando' && st.modo === 'pausa') { terminar(); return; }
+    alternar();
+  }
+
+  function voltarAoFoco() {
+    st.retomada = ganchoDaTarefa();
+    $('gancho').value = '';
+    iniciar(st.duracaoMin, 'foco');
   }
 
   function zerar() {
-    st.estado = 'parado'; st.modo = 'foco'; st.totalMs = 0;
+    st.estado = 'parado'; st.modo = 'foco'; st.totalMs = 0; st.retomada = '';
+    pararAlarme();
     timer.classList.remove('pausa', 'alarme', 'final', 'pausado');
-    $('fim').hidden = true; $('volta').hidden = true;
-    atualizarUI(); render();
+    atualizarUI();
   }
 
   function piscar() {
@@ -306,17 +501,16 @@ body.pip .timer.alarme{animation:alarme .5s ease-in-out 6 alternate}
     piscar();
     iniciarAlarme(st.modo === 'foco' ? 0 : 1);
     if (st.modo === 'foco') {
-      $('status').textContent = 'Tempo! Antes de sair, anote onde parou.';
-      $('fim').hidden = false;
+      contarFoco();
+      $('status').textContent = '';
+      atualizarUI();
       if (!pipWin) $('gancho').focus();
       notificar('Fim do foco' + (nomeTarefa() ? ': ' + nomeTarefa() : ''), 'O que ficou pronto? Onde você parou?');
     } else {
-      $('status').textContent = 'A pausa acabou. Hora de voltar.';
-      const g = $('gancho').value.trim();
-      if (g) { $('volta').textContent = 'Você tinha anotado:\n' + g; $('volta').hidden = false; }
-      notificar('A pausa acabou', g ? 'Você tinha anotado: ' + g.slice(0, 120) : 'Hora de voltar.');
+      st.retomada = ganchoDaTarefa();
+      atualizarUI();
+      notificar('A pausa acabou', st.retomada ? 'Você parou em: ' + st.retomada.slice(0, 120) : 'Hora de voltar.');
     }
-    atualizarUI(); render();
   }
 
   // Segundo e terceiro toque, com frase diferente, se o gancho ficar vazio
@@ -357,46 +551,55 @@ body.pip .timer.alarme{animation:alarme .5s ease-in-out 6 alternate}
   async function alternarPip() {
     if (pipWin) { pipWin.close(); return; }
     if (!('documentPictureInPicture' in window)) {
-      $('status').textContent = 'Janela flutuante indisponível aqui. Abra este arquivo direto no Chrome (versão 116 ou mais nova).';
+      $('status').textContent = 'Janela flutuante indisponível aqui. Use o Chrome (versão 116 ou mais nova).';
       return;
     }
     try {
-      pipWin = await documentPictureInPicture.requestWindow({ width: 240, height: 290 });
+      pipWin = await documentPictureInPicture.requestWindow({ width: 260, height: 340 });
     } catch (e) {
       pipWin = null;
       $('status').textContent = 'Não consegui abrir a janela flutuante: ' + e.message;
       return;
     }
-    const d = pipWin.document;
+    const d = pipWin.document, palco = $('palco');
     d.head.appendChild($('estilo').cloneNode(true));
     d.body.className = 'pip';
-    const wrap = d.createElement('div'); wrap.id = 'app';
-    pipLabel = d.createElement('div'); pipLabel.id = 'pipTarefa';
-    const marca = document.createComment('timer');
-    timer.before(marca);
-    wrap.append(pipLabel, timer);
-    d.body.appendChild(wrap);
+    const marca = document.createComment('palco');
+    palco.before(marca);
+    d.body.appendChild(palco);
     pipWin.addEventListener('keydown', teclas);
     pipWin.addEventListener('pointerdown', pararAlarme, true);
     pipWin.addEventListener('keydown', pararAlarme, true);
     pipWin.addEventListener('pagehide', () => {
-      marca.replaceWith(timer);
-      pipWin = null; pipLabel = null;
+      marca.replaceWith(palco);
+      pipWin = null;
       atualizarUI();
     });
-    atualizarUI(); render();
+    atualizarUI();
   }
+
+  // Da janela flutuante de volta à aba
+  function voltarAba() {
+    if (pipWin) pipWin.close();
+    window.focus();
+    if (st.estado === 'fim' && st.modo === 'foco') setTimeout(() => $('gancho').focus(), 50);
+  }
+  $('pipVoltar').addEventListener('click', voltarAba);
+  $('pipAcao').addEventListener('click', () => {
+    if (st.estado === 'fim' && st.modo === 'foco') voltarAba();
+    else voltarAoFoco();
+  });
 
   // ---------- Eventos ----------
   function teclas(e) {
     const alvo = e.target && e.target.tagName;
-    if (e.code === 'Space' && alvo !== 'INPUT' && alvo !== 'TEXTAREA') {
+    if (e.code === 'Space' && alvo !== 'INPUT' && alvo !== 'TEXTAREA' && alvo !== 'BUTTON' && alvo !== 'SUMMARY') {
       e.preventDefault(); alternar();
     }
   }
   document.addEventListener('keydown', teclas);
   timer.addEventListener('click', alternar);
-  $('btnIniciar').addEventListener('click', alternar);
+  $('btnPrincipal').addEventListener('click', principal);
   $('btnZerar').addEventListener('click', zerar);
   $('btnPip').addEventListener('click', alternarPip);
   $('btnSom').addEventListener('click', () => {
@@ -405,31 +608,33 @@ body.pip .timer.alarme{animation:alarme .5s ease-in-out 6 alternate}
     if (st.som !== 'desligado') { garantirAudio(); tocarPadrao(0); } // amostra do volume escolhido
     atualizarUI();
   });
-  $('btnPausa5').addEventListener('click', () => iniciar(5, 'pausa'));
-  $('btnPausa10').addEventListener('click', () => iniciar(10, 'pausa'));
+  $('btnPausa5').addEventListener('click', () => { salvarGancho(); iniciar(5, 'pausa'); });
+  $('btnPausa10').addEventListener('click', () => { salvarGancho(); iniciar(10, 'pausa'); });
+  $('btnEncerrar').addEventListener('click', () => { salvarGancho(); zerar(); $('status').textContent = 'Bom trabalho. Quando voltar, o que você anotou vai estar aqui.'; });
+  $('btnPular').addEventListener('click', () => { st.pular = true; atualizarUI(); });
+  $('gancho').addEventListener('input', () => { salvarGancho(); atualizarUI(); });
   $('tarefa').addEventListener('input', atualizarUI);
+  $('pronto').addEventListener('input', atualizarUI);
+  $('tarefa').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); $('pronto').focus(); } });
+  $('pronto').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); comecarFoco(); } });
 
-  document.querySelectorAll('#presets button').forEach(p => p.addEventListener('click', () => {
-    st.duracaoMin = Number(p.dataset.min); store.set('min', st.duracaoMin);
+  function definirDuracao(v) {
+    st.duracaoMin = v; store.set('min', v);
+    atualizarUI();
+  }
+  document.querySelectorAll('#presets .chip[data-min]').forEach(p => p.addEventListener('click', () => {
     $('minCustom').value = '';
-    if (st.estado === 'fim') zerar();
-    atualizarUI(); render();
+    definirDuracao(Number(p.dataset.min));
   }));
-  $('minCustom').addEventListener('change', e => {
+  $('minCustom').addEventListener('input', e => {
     const v = Math.round(Number(e.target.value));
-    if (v >= 1 && v <= 180) {
-      st.duracaoMin = v; store.set('min', v);
-      if (st.estado === 'fim') zerar();
-      atualizarUI(); render();
-    }
+    if (v >= 1 && v <= 180) definirDuracao(v);
   });
 
-  $('btnCopiar').addEventListener('click', async () => {
-    const texto = (nomeTarefa() ? nomeTarefa() + '\n' : '') + 'Parei em / próximo passo: ' + $('gancho').value.trim();
-    try { await navigator.clipboard.writeText(texto); }
-    catch (e) { const ta = $('gancho'); ta.select(); document.execCommand('copy'); }
-    $('status').textContent = 'Copiado. Agora a pausa.';
-  });
+  // Dica da primeira visita
+  $('dica').hidden = store.get('dicaVista', false);
+  $('btnDica').addEventListener('click', () => { $('dica').hidden = true; store.set('dicaVista', true); });
+  $('btnVerDica').addEventListener('click', () => { $('dica').hidden = false; $('ajustes').open = false; });
 
   window.addEventListener('beforeunload', e => {
     if (st.estado === 'rodando' || st.estado === 'pausado') { e.preventDefault(); e.returnValue = ''; }
@@ -448,8 +653,9 @@ body.pip .timer.alarme{animation:alarme .5s ease-in-out 6 alternate}
   document.addEventListener('pointerdown', pararAlarme, true);
   document.addEventListener('keydown', pararAlarme, true);
 
-  atualizarUI(); render(); iniciarRelogio();
-  if (params.get('auto') === '1') iniciar(st.duracaoMin, 'foco');
+  atualizarUI(); iniciarRelogio();
+  if (params.get('auto') === '1' && nomeTarefa()) comecarFoco();
+  else if (!nomeTarefa()) $('tarefa').focus();
 })();
 </script>
 </body>
