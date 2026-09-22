@@ -100,7 +100,7 @@ body.pip .timer.alarme{animation:alarme .5s ease-in-out 6 alternate}
     estado: 'parado',    // parado | rodando | pausado | fim
     fim: 0, restanteMs: 0, totalMs: 0,
     fimEm: 0, lembretes: 0,
-    som: store.get('som', true)
+    som: store.get('somNivel', store.get('som', true) === false ? 'desligado' : 'forte') // forte | suave | desligado
   };
   if (!(st.duracaoMin > 0 && st.duracaoMin <= 180)) st.duracaoMin = 25;
   if (params.get('tarefa')) $('tarefa').value = params.get('tarefa');
@@ -119,29 +119,54 @@ body.pip .timer.alarme{animation:alarme .5s ease-in-out 6 alternate}
     }
   })();
 
-  // ---------- Som (curto, só no fim) ----------
+  // ---------- Som: alarme que repete até ele mexer no timer ----------
   let audio = null;
   function garantirAudio() {
-    if (!st.som) return;
+    if (st.som === 'desligado') return;
     try {
       audio = audio || new (window.AudioContext || window.webkitAudioContext)();
       if (audio.state === 'suspended') audio.resume();
     } catch (e) {}
   }
-  function tocar(n) {
-    if (!st.som) return;
+  // Padrões diferentes para fim do foco, fim da pausa e cada lembrete: som idêntico é o que ele aprende a ignorar
+  const PADROES = [
+    [[880, .18], [660, .18], [880, .18], [660, .18], [880, .4]],   // fim do foco: sirene curta
+    [[523, .22], [659, .22], [784, .22], [1047, .5]],              // fim da pausa: subida
+    [[1175, .12], [0, .08], [1175, .12], [0, .08], [1175, .12]],   // 1º lembrete: bipe seco
+    [[392, .3], [1568, .15], [392, .3], [1568, .15], [392, .3]]    // 2º lembrete: grave e agudo
+  ];
+  function tocarPadrao(i) {
+    if (st.som === 'desligado') return;
     garantirAudio();
     if (!audio) return;
-    const t0 = audio.currentTime;
-    for (let i = 0; i < n; i++) {
-      const o = audio.createOscillator(), g = audio.createGain(), t = t0 + i * 0.35;
-      o.type = 'sine'; o.frequency.value = 660 + i * 110;
-      g.gain.setValueAtTime(0.0001, t);
-      g.gain.exponentialRampToValueAtTime(0.25, t + 0.03);
-      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.3);
-      o.connect(g).connect(audio.destination);
-      o.start(t); o.stop(t + 0.32);
-    }
+    const forte = st.som === 'forte', vol = forte ? 0.7 : 0.2;
+    let t = audio.currentTime + 0.02;
+    PADROES[i % PADROES.length].forEach(([freq, dur]) => {
+      if (freq) {
+        const o = audio.createOscillator(), g = audio.createGain();
+        o.type = forte ? 'square' : 'sine'; o.frequency.value = freq;
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.exponentialRampToValueAtTime(vol, t + 0.02);
+        g.gain.setValueAtTime(vol, t + dur - 0.03);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+        o.connect(g).connect(audio.destination);
+        o.start(t); o.stop(t + dur + 0.01);
+      }
+      t += dur + 0.04;
+    });
+  }
+  // Toca a cada 4 s até qualquer clique ou tecla no timer; desiste depois de 2 min e deixa os lembretes seguirem
+  const alarme = { ativo: false, padrao: 0, proximo: 0, ate: 0 };
+  function iniciarAlarme(padrao) {
+    Object.assign(alarme, { ativo: true, padrao, proximo: 0, ate: Date.now() + 120000 });
+    tickAlarme();
+  }
+  function pararAlarme() { alarme.ativo = false; }
+  function tickAlarme() {
+    if (!alarme.ativo) return;
+    const agora = Date.now();
+    if (agora > alarme.ate) { pararAlarme(); return; }
+    if (agora >= alarme.proximo) { tocarPadrao(alarme.padrao); alarme.proximo = agora + 4000; }
   }
 
   // ---------- Notificação do sistema (aparece mesmo com o Chrome atrás) ----------
@@ -211,7 +236,7 @@ body.pip .timer.alarme{animation:alarme .5s ease-in-out 6 alternate}
       p.classList.toggle('ativo', Number(p.dataset.min) === st.duracaoMin);
     });
     $('minCustom').disabled = ativo;
-    $('btnSom').textContent = 'Som: ' + (st.som ? 'ligado' : 'desligado');
+    $('btnSom').textContent = 'Som: ' + st.som;
     $('btnPip').textContent = pipWin ? 'Fechar janela flutuante' : 'Janela flutuante';
 
     const t = nomeTarefa();
@@ -237,6 +262,7 @@ body.pip .timer.alarme{animation:alarme .5s ease-in-out 6 alternate}
     st.fim = Date.now() + st.totalMs;
     st.estado = 'rodando';
     st.lembretes = 0;
+    pararAlarme();
     timer.classList.toggle('pausa', st.modo === 'pausa');
     timer.classList.remove('alarme');
     $('fim').hidden = true;
@@ -278,7 +304,7 @@ body.pip .timer.alarme{animation:alarme .5s ease-in-out 6 alternate}
     st.fimEm = Date.now();
     timer.classList.remove('final', 'pausado');
     piscar();
-    tocar(st.modo === 'foco' ? 3 : 2);
+    iniciarAlarme(st.modo === 'foco' ? 0 : 1);
     if (st.modo === 'foco') {
       $('status').textContent = 'Tempo! Antes de sair, anote onde parou.';
       $('fim').hidden = false;
@@ -303,12 +329,13 @@ body.pip .timer.alarme{animation:alarme .5s ease-in-out 6 alternate}
       $('status').textContent = st.lembretes === 1
         ? 'Ainda aí? Uma linha só: onde você parou?'
         : 'Anota o próximo passo e levanta da mesa. A tarefa espera.';
-      piscar(); tocar(1);
+      piscar(); iniciarAlarme(1 + st.lembretes);
       notificar(st.lembretes === 1 ? 'Ainda aí?' : 'Levanta da mesa', $('status').textContent);
     }
   }
 
   function tick() {
+    tickAlarme();
     if (st.estado === 'rodando' && st.fim - Date.now() <= 0) { terminar(); return; }
     lembrarSeParado();
     render();
@@ -350,6 +377,8 @@ body.pip .timer.alarme{animation:alarme .5s ease-in-out 6 alternate}
     wrap.append(pipLabel, timer);
     d.body.appendChild(wrap);
     pipWin.addEventListener('keydown', teclas);
+    pipWin.addEventListener('pointerdown', pararAlarme, true);
+    pipWin.addEventListener('keydown', pararAlarme, true);
     pipWin.addEventListener('pagehide', () => {
       marca.replaceWith(timer);
       pipWin = null; pipLabel = null;
@@ -370,7 +399,12 @@ body.pip .timer.alarme{animation:alarme .5s ease-in-out 6 alternate}
   $('btnIniciar').addEventListener('click', alternar);
   $('btnZerar').addEventListener('click', zerar);
   $('btnPip').addEventListener('click', alternarPip);
-  $('btnSom').addEventListener('click', () => { st.som = !st.som; store.set('som', st.som); if (st.som) garantirAudio(); atualizarUI(); });
+  $('btnSom').addEventListener('click', () => {
+    st.som = { forte: 'suave', suave: 'desligado', desligado: 'forte' }[st.som] || 'forte';
+    store.set('somNivel', st.som);
+    if (st.som !== 'desligado') { garantirAudio(); tocarPadrao(0); } // amostra do volume escolhido
+    atualizarUI();
+  });
   $('btnPausa5').addEventListener('click', () => iniciar(5, 'pausa'));
   $('btnPausa10').addEventListener('click', () => iniciar(10, 'pausa'));
   $('tarefa').addEventListener('input', atualizarUI);
@@ -410,6 +444,9 @@ body.pip .timer.alarme{animation:alarme .5s ease-in-out 6 alternate}
   };
   document.addEventListener('pointerdown', destravarAudio);
   document.addEventListener('keydown', destravarAudio);
+  // Qualquer clique ou tecla no timer desliga o alarme (a pergunta do gancho continua na tela)
+  document.addEventListener('pointerdown', pararAlarme, true);
+  document.addEventListener('keydown', pararAlarme, true);
 
   atualizarUI(); render(); iniciarRelogio();
   if (params.get('auto') === '1') iniciar(st.duracaoMin, 'foco');
